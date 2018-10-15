@@ -11,10 +11,11 @@ public class Keyboard : MonoBehaviour {
 	}
 
 	public PlayerBehaviour playerBehaviour 	= null;
-	public Rigidbody body 				= null;
-	public Vector3 moveDirection 		= new Vector3(0f, 0f, 0f);
+	public Crosshair crosshair				= null;
+	public Rigidbody body 					= null;
+	public Vector3 moveDirection 			= new Vector3(0f, 0f, 0f);
 
-	private int numberOfAttack 			= 0;	//licznik ataku - po 3ech atakach cooldown
+	private int numberOfAttack 				= 0;	//licznik ataku - po 3ech atakach cooldown
 	
 	void Start () {
 		playerBehaviour = GetComponent<PlayerBehaviour>();
@@ -43,7 +44,7 @@ public class Keyboard : MonoBehaviour {
 		}
 		
 		if (Input.GetMouseButtonDown(0) && playerBehaviour.attackDelay <= 0f) {
-			playerBehaviour.Attack(Properties.GetInstance().flags["thirdEye"] ? true : false, playerBehaviour.lookDirection, Properties.GetInstance().attackRange);
+			playerBehaviour.Attack(Properties.GetInstance().flags["thirdEye"] ? true : false, /*crosshair.attackDirection,*/ Properties.GetInstance().attackRange);
 			if (++numberOfAttack >= 3) {
 				playerBehaviour.attackDelay = 0.50f;
 				numberOfAttack = 0;

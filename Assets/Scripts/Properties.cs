@@ -58,7 +58,7 @@ public class Properties {
 	public float maxFaith			= 100f;
 	public float addedMaxFaith		= 0f;
 	public float faithConsumption	= 0f;//done
-	public float baseAttackRange	= 3f;
+	public float baseAttackRange	= 1.5f;	//było 3f
 	public float addedAttackRange	= 0f;
 	public float attackRange 		= 0f;
 	public int luck					= 0;//done

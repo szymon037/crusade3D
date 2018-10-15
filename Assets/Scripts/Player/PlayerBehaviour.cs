@@ -26,34 +26,42 @@ public class PlayerBehaviour : MonoBehaviour {
 	public float attackDelay 			= 0f;
 
 	//public Vector2 rollTargetPosition 	= Vector2.zero;
-	public Vector3 rollTargetPosition 	= new Vector3(0f, 0f, 0f);
+	public Vector3 rollTargetPosition 		= new Vector3(0f, 0f, 0f);
 	//public Vector2 lookDirection 		= new Vector2(0f, 0f);
-	public Vector3 lookDirection 		= new Vector3(0f, 0f, 0f);
+	public Vector3 lookDirection 			= new Vector3(0f, 0f, 0f);
 	//public onUse[] itemEffects 			= new onUse[System.Enum.GetNames(typeof(Properties.ActiveItem)).Length];
 	//public Dictionary<string, bool> itemEffectsFlags = new Dictionary<string, bool>();
 	//public ContactFilter2D filter 		= new ContactFilter2D();
 	//public RaycastHit2D[] hits 			= new RaycastHit2D[35];  
-	public RaycastHit[] hits 			= new RaycastHit[35];  
-	public string[] gamepadnames 		= null;
-	public Rigidbody playerBody 		= null;
-	public PS4Controller ps4 			= null;
-	public XboxController xbox 			= null;
-	public Keyboard keyboard 			= null;
+	public RaycastHit[] hits 				= new RaycastHit[35];  
+	public string[] gamepadnames 			= null;
+	public Rigidbody playerBody 			= null;
+	public PS4Controller ps4 				= null;
+	public XboxController xbox 				= null;
+	public Keyboard keyboard 				= null;
+	//public Crosshair crosshair			= null;
 
-	private WaitForSeconds waitTime		= new WaitForSeconds(0.15f);
+	private WaitForSeconds waitTime			= new WaitForSeconds(0.15f);
 
     public bool gamepadConnected = false;
     private int numberOfAttack = 0;			//jeśli równy 3, wtedy cooldown
 
-	public Vector3 colliderCenter		= new Vector3(0f, 0f, 0f);
+	public Vector3 colliderCenter			= new Vector3(0f, 0f, 0f);
 	private BoxCollider playerCollider;
 	private RaycastHit playerHit ; 
+	private int j = 0;
 
+	private bool isHit 						= false;
+    private Vector3 p 						= new Vector3(0f, 0f, 0f);		//wektor przechowujący pozycję celownika na płaszczyźnie kamery (w świecie gry)
+    public 	Vector3 attackDirection			= new Vector3(0f, 0f, 0f);		//wektor przechowujący pozycję, na którą wskazuje celownik w świecie gry
+	public Camera 	cam 					= null;
+	public Vector3 	attackOrigin 			= Vector3.zero;
+	private int 	mask 					= -1;
+	public Vector3 newScale					= Vector3.zero;
 
     void Start () {
 	//	healthDisplay.text = "Health : " + Properties.GetInstance().health.ToString();
 		attackDelay = 0.1f;//Properties.GetInstance().attackSpeed;
-
 		//healthBar.value = Properties.GetInstance().health;
 		//filter.useDepth = true;
 		//filter.SetDepth(0.5f, 1f);
@@ -65,8 +73,7 @@ public class PlayerBehaviour : MonoBehaviour {
 		StartCoroutine("InputCheck");
 
 		playerCollider = GetComponent<BoxCollider>();
-
-
+		//newScale = new Vector3(0.5f, 0.5f, 1f);
 
 
 	}
@@ -75,8 +82,13 @@ public class PlayerBehaviour : MonoBehaviour {
                
         //timery
 
-		//Debug.Log(playerCollider.center);
-		
+		//liczenie pozycji celownika na płaszczyźnie kamery
+		p = cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, cam.nearClipPlane));
+		//pozycja na którą wskazuje celownik w świecie gry
+		attackDirection = new Vector3(p.x-this.transform.position.x, 0f, p.y+p.z-this.transform.position.z);
+		attackOrigin = this.transform.position + playerCollider.center; 
+		//Debug.Log(transform.localScale);
+
 
         if (attackDelay > 0f) attackDelay -= Time.deltaTime;
 
@@ -146,33 +158,34 @@ public class PlayerBehaviour : MonoBehaviour {
 		lookDirection = Vector3.zero;
 	}
 
-	public void Attack(bool bonus, Vector2 direction, float range) { 
-		//LayerMask mask = -1;
-		/*Physics2D.BoxCast(
-			transform.position,
-			Vector2.one * 0.4f,
-			0f,
-			direction,
-			filter,
-			hits,
-			range
-			);*/
-
-			Physics.BoxCast(
-			playerCollider.center,
-			
-			transform.localScale * 0.5f, 		//w opisie w dokumentacji ma być połowa (halfExtents), ale w przykładzie jest całość, bez *0.5f
-			direction,
+	public void Attack(bool bonus, float range) { 
+		
+			if(	Physics.BoxCast(
+			attackOrigin,
+			transform.localScale*0.5f, 		
+			//newScale, //nowa skala - do atakowania kilku przeciwników na raz (?)
+			attackDirection.normalized,
 			out playerHit,
 			transform.rotation,
-			range
-		);
+			range,
+			mask))
+			{
+			//Debug.Log("HIT" + j);
+			++j;
+			//Debug.Log("Hit: " + playerHit.collider.name);
+			isHit = true;
 
-		Debug.DrawRay(playerCollider.center+transform.position, direction, Color.blue, 1f);
+			}
+			else isHit = false;
+Debug.Log("Hit: " + playerHit.transform);
+
+
+			//Debug.Log(attackDirection.x + attackDirection.y + attackDirection.z);
+		Debug.DrawRay(new Vector3(attackOrigin.x, attackOrigin.y, attackOrigin.z), attackDirection, Color.blue, 2f);
 		
-		playerBody.AddForce(1.5f * direction, ForceMode.Impulse);
+		//playerBody.AddForce(1.5f * direction, ForceMode.Impulse);			//ta linijka w jakiś sposób wyjebuje rolanda w prawie że kosmos
 
-		Debug.DrawRay(transform.position, direction, Color.red, 1f);
+		//Debug.DrawRay(transform.position, attackDirection, Color.red, 1f);
 		foreach (RaycastHit obj in hits) {										//!!!
 			if (obj.transform != null) {
 				if (obj.transform.gameObject.CompareTag("Enemy")) {
@@ -214,7 +227,7 @@ public class PlayerBehaviour : MonoBehaviour {
 					/* jeśli mamy przedmiot "The Third Eye" to mamy 15% szans na dodatkowy atak */
 					if (Properties.GetInstance().flags["thirdEye"]) {
 						if (bonus && Random.value <= 0.15f) {
-							Attack(false, direction, range);
+							Attack(false, /*attackDirection,*/ range);
 						}
 					}
 					/* */
@@ -251,4 +264,30 @@ public class PlayerBehaviour : MonoBehaviour {
 			
 		}
 	}
+
+	void OnDrawGizmos()
+    {
+       
+
+        //Check if there has been a hit yet
+        if (isHit)
+        {
+        	 Gizmos.color = Color.green;
+            //Draw a Ray forward from GameObject toward the hit
+            Gizmos.DrawRay(attackOrigin, attackDirection.normalized * playerHit.distance);
+            //Draw a cube that extends to where the hit exists
+            Gizmos.DrawWireCube(attackOrigin + attackDirection.normalized * playerHit.distance, transform.localScale*0.5f);
+        }
+        //If there hasn't been a hit yet, draw the ray at the maximum distance
+        else
+        {
+        	Gizmos.color = Color.red;
+        	Vector3 direction = transform.TransformDirection(Vector3.forward) * 5;
+        	 Gizmos.color = Color.green;
+            //Draw a Ray forward from GameObject toward the maximum distance
+            Gizmos.DrawRay(attackOrigin, attackDirection.normalized * 100f);
+            //Draw a cube at the maximum distance
+            //Gizmos.DrawWireCube(this.transform.position + crosshair.attackDirection * 100f, transform.localScale);
+        }
+    }
 }

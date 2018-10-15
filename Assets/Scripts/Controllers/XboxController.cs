@@ -38,7 +38,7 @@ public class XboxController : MonoBehaviour {
 		playerBehaviour.lookDirection = playerBehaviour.lookDirection.normalized;
 
 		if (Input.GetKeyDown("joystick button 2") && playerBehaviour.attackDelay <= 0f) {													//joystick button 2 teoretycznie X na xboxie
-			playerBehaviour.Attack(Properties.GetInstance().flags["thirdEye"] ? true : false, playerBehaviour.lookDirection, Properties.GetInstance().attackRange);
+			playerBehaviour.Attack(Properties.GetInstance().flags["thirdEye"] ? true : false, /*playerBehaviour.lookDirection,*/ Properties.GetInstance().attackRange);
 			if (++numberOfAttack >= 3) {
 				playerBehaviour.attackDelay = 0.50f;
 				numberOfAttack = 0;

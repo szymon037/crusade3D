@@ -37,7 +37,7 @@ public class PS4Controller : MonoBehaviour {
 		playerBehaviour.lookDirection = playerBehaviour.lookDirection.normalized;
 
 		if (Input.GetKeyDown("joystick button 0") && playerBehaviour.attackDelay <= 0f) {
-			playerBehaviour.Attack(Properties.GetInstance().flags["thirdEye"] ? true : false, playerBehaviour.lookDirection, Properties.GetInstance().attackRange);
+			playerBehaviour.Attack(Properties.GetInstance().flags["thirdEye"] ? true : false, /*playerBehaviour.lookDirection,*/ Properties.GetInstance().attackRange);
 			if (++numberOfAttack >= 3) {
 				playerBehaviour.attackDelay = 0.50f;
 				numberOfAttack = 0;
