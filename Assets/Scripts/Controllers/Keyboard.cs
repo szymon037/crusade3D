@@ -29,7 +29,7 @@ public class Keyboard : MonoBehaviour {
 		if (!Properties.GetInstance().flags["isRolling"] && playerBehaviour.attackingTimer <= 0f) {
 			float tempSpeed = Properties.GetInstance().speed;
 			if (x != 0 && z != 0) tempSpeed /= 1.41f;
-			moveDirection.x = x * tempSpeed;
+			moveDirection.x = x * tempSpeed * 0.707f;
 			moveDirection.z = z * tempSpeed;
 			body.velocity = moveDirection;
 		}

@@ -53,7 +53,7 @@ public class Properties {
 	public float maxHealth			= 100f;
 	public float addedMaxHealth		= 0f;
 	public float attackSpeed		= 2f;
-	public float speed 				= 2.5f;
+	public float speed 				= 7.5f;
 	public float addedSpeed 		= 0f;
 	public float maxFaith			= 100f;
 	public float addedMaxFaith		= 0f;
