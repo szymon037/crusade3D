@@ -15,7 +15,6 @@ public class Keyboard : MonoBehaviour {
 	public Rigidbody body 					= null;
 	public Vector3 moveDirection 			= new Vector3(0f, 0f, 0f);
 
-	private int numberOfAttack 				= 0;	//licznik ataku - po 3ech atakach cooldown
 	
 	void Start () {
 		playerBehaviour = GetComponent<PlayerBehaviour>();
@@ -23,10 +22,10 @@ public class Keyboard : MonoBehaviour {
 	}
 	
 	void Update () {
-		float x = Properties.GetInstance().flags["confused"] ? -Input.GetAxisRaw("Horizontal") : Input.GetAxisRaw("Horizontal");
-		float z = Properties.GetInstance().flags["confused"] ? -Input.GetAxisRaw("Vertical") : Input.GetAxisRaw("Vertical");
+		float x = Properties.GetInstance().flags["confused"] ? -Input.GetAxisRaw("Horizontal") 	: Input.GetAxisRaw("Horizontal");
+		float z = Properties.GetInstance().flags["confused"] ? -Input.GetAxisRaw("Vertical") 	: Input.GetAxisRaw("Vertical");
 
-		if (!Properties.GetInstance().flags["isRolling"] && playerBehaviour.attackingTimer <= 0f) {
+		if (!Properties.GetInstance().flags["isRolling"] && playerBehaviour.attackDelay <= 0f /*playerBehaviour.attackingTimer <= 0f*/) {
 			float tempSpeed = Properties.GetInstance().speed;
 			if (x != 0 && z != 0) tempSpeed /= 1.41f;
 			moveDirection.x = x * tempSpeed * 0.707f;
@@ -43,15 +42,21 @@ public class Keyboard : MonoBehaviour {
 			playerBehaviour.Dodge();
 		}
 		
-		if (Input.GetMouseButtonDown(0) && playerBehaviour.attackDelay <= 0f) {
+		if (Input.GetMouseButtonDown(0) && playerBehaviour.attackDelay <= 0f && playerBehaviour.numberOfAttack < 3) {
+			/*playerBehaviour.attackDirectionOnClick = playerBehaviour.attackDirection;
+			playerBehaviour.isAttacking = true;
+			playerBehaviour.breakAttackAnimation = true;
+			++playerBehaviour.numberOfAttack;*/
+		
 			playerBehaviour.Attack(Properties.GetInstance().flags["thirdEye"] ? true : false, /*crosshair.attackDirection,*/ Properties.GetInstance().attackRange);
-			if (++numberOfAttack >= 3) {
-				playerBehaviour.attackDelay = 0.50f;
-				numberOfAttack = 0;
-			} else playerBehaviour.attackDelay = 0.18f;
-			playerBehaviour.attackingTimer = 0.25f;
+			/*if (playerBehaviour.numberOfAttack == 3) {
+				playerBehaviour.attackDelay = 0.375f;		//0.9375 - długość odgrywania całej animacji ataku
+				playerBehaviour.numberOfAttackTimer = 0.9375f;
+			} else if(playerBehaviour.numberOfAttack < 3){
+				playerBehaviour.attackDelay = 0.375f;	//0.375 - długość odgrywania 6 klatek ataku
+				playerBehaviour.playerBody.velocity *= 0.65f;
+				playerBehaviour.numberOfAttackTimer = 0.9375f;
+			}*/
 		}
-	}
-
-	
+	}	
 }

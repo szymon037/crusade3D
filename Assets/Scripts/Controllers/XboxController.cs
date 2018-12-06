@@ -25,7 +25,7 @@ public class XboxController : MonoBehaviour {
 		float x = Properties.GetInstance().flags["confused"] ? -Input.GetAxisRaw("GamepadHorizontal") : Input.GetAxisRaw("GamepadHorizontal");
 		float z = Properties.GetInstance().flags["confused"] ? -Input.GetAxisRaw("GamepadVertical") : Input.GetAxisRaw("GamepadVertical");
 
-		if (Mathf.Abs(x) > 0.03f && Mathf.Abs(z) > 0.03f && !Properties.GetInstance().flags["isRolling"] && playerBehaviour.attackingTimer <= 0f) {
+		if (!Properties.GetInstance().flags["isRolling"] && playerBehaviour.attackDelay <= 0f /*playerBehaviour.attackingTimer <= 0f*/) {
 			moveDirection.x = x * Properties.GetInstance().speed;
 			moveDirection.z = z * Properties.GetInstance().speed;
 			body.velocity = moveDirection;
@@ -37,13 +37,8 @@ public class XboxController : MonoBehaviour {
 		playerBehaviour.lookDirection.z = z;
 		playerBehaviour.lookDirection = playerBehaviour.lookDirection.normalized;
 
-		if (Input.GetKeyDown("joystick button 2") && playerBehaviour.attackDelay <= 0f) {													//joystick button 2 teoretycznie X na xboxie
+		if (Input.GetKeyDown("joystick button 2") && playerBehaviour.attackDelay <= 0f && playerBehaviour.numberOfAttack < 3) {													//joystick button 2 teoretycznie X na xboxie
 			playerBehaviour.Attack(Properties.GetInstance().flags["thirdEye"] ? true : false, /*playerBehaviour.lookDirection,*/ Properties.GetInstance().attackRange);
-			if (++numberOfAttack >= 3) {
-				playerBehaviour.attackDelay = 0.50f;
-				numberOfAttack = 0;
-			} else playerBehaviour.attackDelay = 0.18f;
-			playerBehaviour.attackingTimer = 0.25f;
 		}
 
 		if (Input.GetKeyDown("joystick button 1") && !Properties.GetInstance().flags["isRolling"] && playerBehaviour.rollTimer <= 0f) {		//joystick button 1 teoretycznie O 

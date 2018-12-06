@@ -20,7 +20,8 @@ public class PlayerBehaviour : MonoBehaviour {
 	public float rollTimer 				= 0f;
 	public float hitTimer 				= 0f;
 	public float confuseTimer			= 0f;
-	public float attackingTimer 		= 0f;
+	public float attackAnimationTimer	= 0f;
+	public float numberOfAttackTimer	= 0f;		//numberOfAttack musi być wyzerowany też po odpowiednim czasie
 	public float rollSpeed 			  	= 15f;
 	public float rollDistance 		  	= 1.5f;
 	public float attackDelay 			= 0f;
@@ -39,12 +40,13 @@ public class PlayerBehaviour : MonoBehaviour {
 	public PS4Controller ps4 				= null;
 	public XboxController xbox 				= null;
 	public Keyboard keyboard 				= null;
+	public AnimationScript animationScript 	= null;
 	//public Crosshair crosshair			= null;
 
 	private WaitForSeconds waitTime			= new WaitForSeconds(0.15f);
 
     public bool gamepadConnected = false;
-    private int numberOfAttack = 0;			//jeśli równy 3, wtedy cooldown
+    public int numberOfAttack = 0;			//jeśli równy 3, wtedy cooldown
 
 	public Vector3 colliderCenter			= new Vector3(0f, 0f, 0f);
 	private BoxCollider playerCollider;
@@ -54,14 +56,18 @@ public class PlayerBehaviour : MonoBehaviour {
 	private bool isHit 						= false;
     private Vector3 p 						= new Vector3(0f, 0f, 0f);		//wektor przechowujący pozycję celownika na płaszczyźnie kamery (w świecie gry)
     public 	Vector3 attackDirection			= new Vector3(0f, 0f, 0f);		//wektor przechowujący pozycję, na którą wskazuje celownik w świecie gry
+    public Vector3 attackDirectionOnClick 	= new Vector3(0f, 0f, 0f);		//wektor przechowujący pozycję, na którą wskazuje celownik w świecie gry w chwili ataku
 	public Camera 	cam 					= null;
 	public Vector3 	attackOrigin 			= Vector3.zero;
 	private int 	mask 					= -1;
 	public Vector3 newScale					= Vector3.zero;
 
+	public bool isAttacking					= false;
+	public bool isAttackAnimRunning			= false;
+
     void Start () {
 	//	healthDisplay.text = "Health : " + Properties.GetInstance().health.ToString();
-		attackDelay = 0.1f;//Properties.GetInstance().attackSpeed;
+		//attackDelay = 0.1f;//Properties.GetInstance().attackSpeed;
 		//healthBar.value = Properties.GetInstance().health;
 		//filter.useDepth = true;
 		//filter.SetDepth(0.5f, 1f);
@@ -70,6 +76,7 @@ public class PlayerBehaviour : MonoBehaviour {
 		ps4 = gameObject.GetComponent<PS4Controller>();
 		xbox = gameObject.GetComponent<XboxController>();
 		keyboard = gameObject.GetComponent<Keyboard>();
+		animationScript = gameObject.GetComponent<AnimationScript>();
 		StartCoroutine("InputCheck");
 
 		playerCollider = GetComponent<BoxCollider>();
@@ -84,13 +91,47 @@ public class PlayerBehaviour : MonoBehaviour {
 
 		//liczenie pozycji celownika na płaszczyźnie kamery
 		p = cam.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, cam.nearClipPlane));
+
+		
+		
+
+		if(!gamepadConnected)
+			attackDirection = new Vector3(p.x-this.transform.position.x, 0f, p.y+p.z-this.transform.position.z);
+		else
+			attackDirection = new Vector3(Input.GetAxisRaw("GamepadHorizontal"), 0f, Input.GetAxisRaw("GamepadVertical"));
+			
+		//Debug.Log("kierunek ataku: " + attackDirection);
 		//pozycja na którą wskazuje celownik w świecie gry
-		attackDirection = new Vector3(p.x-this.transform.position.x, 0f, p.y+p.z-this.transform.position.z);
+		
 		attackOrigin = this.transform.position + playerCollider.center; 
+		Debug.Log("attackDirection: " + attackDirection + " attackDirectionOnClick: " + attackDirectionOnClick);
 		//Debug.Log(transform.localScale);
 
+		//Debug.Log("attackDelay: " + attackDelay);
 
-        if (attackDelay > 0f) attackDelay -= Time.deltaTime;
+		
+
+        if (attackDelay > 0f) {
+	        attackDelay -= Time.deltaTime;
+
+	        if(attackDelay <= 0f) {
+	        	isAttacking = false;
+
+	        	//if(numberOfAttack >= 3)
+	        		//numberOfAttack = 0;
+	        }
+
+        }
+
+        if (numberOfAttackTimer > 0) {
+			numberOfAttackTimer -= Time.deltaTime;
+			if( animationScript.isMoving == 0f && attackDelay < 0f )
+				playerBody.AddForce(1.1f * attackDirectionOnClick.normalized, ForceMode.Impulse);
+			if(numberOfAttackTimer <= 0f){
+				numberOfAttack = 0;
+				isAttackAnimRunning = false;
+			}
+		}
 
 		if (rollTimer > 0f) {
 			rollTimer -= Time.deltaTime;
@@ -100,10 +141,13 @@ public class PlayerBehaviour : MonoBehaviour {
 
 		if (holyWaterTimer > 0f) holyWaterTimer -= Time.deltaTime;
 
-		if (attackingTimer > 0f) {
+		/*if (attackingTimer > 0f) {
 			attackingTimer -= Time.deltaTime;
-			playerBody.velocity *= 0.65f;
-		}
+			//playerBody.velocity *= 0.65f;	//przeniesione do Keyboard
+			if(attackingTimer <= 0f)
+				isAttacking = false;
+		}*/
+		
 	}
 
 	IEnumerator InputCheck() {
@@ -159,31 +203,48 @@ public class PlayerBehaviour : MonoBehaviour {
 	}
 
 	public void Attack(bool bonus, float range) { 
-		
-			if(	Physics.BoxCast(
-			attackOrigin,
-			transform.localScale*0.5f, 		
-			//newScale, //nowa skala - do atakowania kilku przeciwników na raz (?)
-			attackDirection.normalized,
-			out playerHit,
-			transform.rotation,
-			range,
-			mask))
-			{
-			//Debug.Log("HIT" + j);
-			++j;
-			//Debug.Log("Hit: " + playerHit.collider.name);
-			isHit = true;
 
-			}
-			else isHit = false;
-Debug.Log("Hit: " + playerHit.transform);
+		if(attackDirection != Vector3.zero)
+			attackDirectionOnClick = attackDirection;
+		isAttacking = true;
+		++numberOfAttack;
+		attackDelay = 0.375f;	//0.375 - długość odgrywania 6 klatek ataku
+		numberOfAttackTimer = 0.9375f;
+
+		if (numberOfAttack < 3) {
+			playerBody.velocity *= 0f;
+		} /*else if (numberOfAttack == 3) {
+			//attackDelay = 0.375f;		//0.9375 - długość odgrywania całej animacji ataku
+			//numberOfAttackTimer = 0.9375f;
+		}*/
+
+
+
+		if(	Physics.BoxCast(
+		attackOrigin,
+		transform.localScale*0.5f, 		
+		//newScale, //nowa skala - do atakowania kilku przeciwników na raz (?)
+		//attackDirectionOnClick.normalized,			//tu jest attackDirectionOnClick zamiast attackDirection, bo gdy jest podłączony pad i nie wychyla się gałki to attackDirection = 0.
+		((attackDirection.x != 0) && (attackDirection.z != 0)) ? attackDirection.normalized : animationScript.lastMove,
+		out playerHit,
+		transform.rotation,
+		range,
+		mask))
+		{
+		//Debug.Log("HIT" + j);
+		++j;
+		//Debug.Log("Hit: " + playerHit.collider.name);
+		isHit = true;
+
+		}
+		else isHit = false;
+		Debug.Log("Hit: " + playerHit.transform);
 
 
 			//Debug.Log(attackDirection.x + attackDirection.y + attackDirection.z);
 		Debug.DrawRay(new Vector3(attackOrigin.x, attackOrigin.y, attackOrigin.z), attackDirection, Color.blue, 2f);
 		
-		//playerBody.AddForce(1.5f * direction, ForceMode.Impulse);			//ta linijka w jakiś sposób wyjebuje rolanda w prawie że kosmos
+		playerBody.AddForce(2f * attackDirectionOnClick.normalized, ForceMode.Impulse);			//ta linijka w jakiś sposób wyjebuje rolanda w prawie że kosmos //albo i nie
 
 		//Debug.DrawRay(transform.position, attackDirection, Color.red, 1f);
 		foreach (RaycastHit obj in hits) {										//!!!
